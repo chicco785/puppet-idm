@@ -14,6 +14,34 @@ class idm (
      $packages  = $idm::params::packages,
      $vhost_dir = $idm::params::vhost_dir
     ) inherits idm::params {
-      
-      
+    
+    class { 'rvm': version => '2.0.0' }
+    rvm_system_ruby {
+      'ruby-2.0.0-p247':
+        ensure => 'present',
+        default_use => true;
     }
+    
+    mysql::db { 'fi-ware-idm_development':
+    user     => 'idm',
+    password => 'idm',
+    host     => 'localhost',
+    # TODO does it make sense to support other charsets?
+    charset  => 'utf8',
+    require  => Class['mysql::server'],
+    }
+    
+    vcsrepo { "/var/www/idm":
+      #ensure => latest,
+      provider => git,
+      source => 'git://github.com/ging/fi-ware-idm.git',
+      revision => 'master',
+    }
+    
+    class { 'nginx': }
+    
+    nginx::resource::vhost { $domain:
+      ensure   => present,
+      www_root => '/var/www/idm',
+    }
+}
